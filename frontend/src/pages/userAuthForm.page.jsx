@@ -1,12 +1,58 @@
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import InputBox from "../components/input.component";
 import googleIcon from "../imgs/google.png";
 import AnimationWrapper from "../common/page-animation";
+import { Toaster, toast } from "react-hot-toast";
+import axios from "axios";
+import { storeInSession } from "../common/session";
 const UserAuthForm = ({ type }) => {
+  const userAuthThroughServer = async (serverRoute, formData) => {
+    try {
+      const response = await axios.post(
+        import.meta.env.VITE_SERVER_DOMAIN + serverRoute,
+        formData
+      );
+      storeInSession("user", JSON.stringify(response.data));
+    } catch ({ response }) {
+      toast.error(response.data.error);
+    }
+  };
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    let serverRoute = type === "sign-in" ? "/auth/signin" : "/auth/signup";
+    let emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+    let passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/;
+    let form = new FormData(formElement);
+    let formData = {};
+    for (let [key, value] of form.entries()) {
+      formData[key] = value;
+    }
+    const { fullname, email, password } = formData;
+    if (fullname) {
+      if (fullname.length < 3) {
+        return toast.error("Fullname must be at least 3 letters long");
+      }
+    }
+
+    if (!email.length) {
+      return toast.error("Enter Email");
+    }
+    if (!emailRegex.test(email)) {
+      return toast.error("Invalid Email");
+    }
+    if (!passwordRegex.test(password)) {
+      return toast.error(
+        "Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letters"
+      );
+    }
+    userAuthThroughServer(serverRoute, formData);
+  };
   return (
     <AnimationWrapper keyValue={type}>
       <section className="h-cover flex items-center justify-center">
-        <form className="w-[80%] max-w-[400px]">
+        <Toaster />
+        <form className="w-[80%] max-w-[400px]" id="formElement">
           <h1 className="text-4xl font-gelasio text-center">
             {type === "sign-in" ? "Welcome back" : "Join us today"}
           </h1>
@@ -32,7 +78,11 @@ const UserAuthForm = ({ type }) => {
             placeholder="Password"
             icon="fi-rr-key"
           />
-          <button className="btn-dark center mt-14" type="submit">
+          <button
+            className="btn-dark center mt-14"
+            type="submit"
+            onClick={handleSubmit}
+          >
             {type.replace("-", " ")}
           </button>
           <div className="relative w-full flex items-center gap-2 my-10 opacity-10 uppercase text-black font-bold">
