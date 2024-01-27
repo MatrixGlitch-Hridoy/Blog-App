@@ -4,3 +4,4 @@ export const authRouter = express.Router();
 
 authRouter.post("/signup", authController.signupUser);
 authRouter.post("/signin", authController.signinUser);
+authRouter.post("/google-auth", authController.signinWithGoogle);

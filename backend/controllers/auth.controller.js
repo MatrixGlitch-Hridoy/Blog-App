@@ -3,6 +3,7 @@ import catchAsyncError from "../middlewares/catch-async-errors.js";
 import userModel from "../models/user.model.js";
 import ErrorHandler from "../utils/Error-handler.js";
 import sendAccessToken from "../utils/jwt-token.js";
+import { getAuth } from "firebase-admin/auth";
 let emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/; // regex for email
 let passwordRegex = /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z]).{6,20}$/; // regex for password
 
@@ -79,11 +80,20 @@ export const authController = {
       if (!user) {
         return next(new ErrorHandler("Invalid email or password", 401));
       }
-      // Checking if password matched or not
-      const isPasswordMatched = await user.comparePassword(password);
-      if (!isPasswordMatched) {
-        return next(new ErrorHandler("Invalid email or password", 401));
+      if (!user.google_auth) {
+        // Checking if password matched or not
+        const isPasswordMatched = await user.comparePassword(password);
+        if (!isPasswordMatched) {
+          return next(new ErrorHandler("Invalid email or password", 401));
+        }
+      } else {
+        return res
+          .status(403)
+          .json({
+            error: "Account was created using google. Try login with google",
+          });
       }
+
       const token = sendAccessToken(user);
       res.status(201).json({
         success: true,
@@ -93,6 +103,59 @@ export const authController = {
       });
     } catch (err) {
       return next(new ErrorHandler(err.message, 400));
+    }
+  }),
+  signinWithGoogle: catchAsyncError(async (req, res, next) => {
+    let { token } = req.body;
+    try {
+      getAuth()
+        .verifyIdToken(token)
+        .then(async (decodedUser) => {
+          let { email, name, picture } = decodedUser;
+          picture = picture.replace("s96-c", "s384-c");
+          let user = await userModel
+            .findOne({
+              "personal_info.email": email,
+            })
+            .select(
+              "personal_info.fullname personal_info.username personal_info.profile_img google_auth"
+            )
+            .then((u) => {
+              return u || null;
+            })
+            .catch((err) => {
+              return res.status(500).json({ error: err.message });
+            });
+          if (user) {
+            if (!user.google_auth) {
+              return res.status(403).json({
+                error:
+                  "This email was signed up without google. Please log in with password to access the account",
+              });
+            }
+          } else {
+            const username = await generateUsername(email);
+            user = await userModel.create({
+              personal_info: {
+                fullname: name,
+                email,
+                profile_img: picture,
+                username,
+              },
+              google_auth: true,
+            });
+          }
+          res.status(200).json({
+            success: true,
+            user,
+            token,
+          });
+        });
+    } catch (err) {
+      return res.status(500).json({
+        error:
+          "Failed to authenticate you with google. Try with some other google account",
+      });
     }
   }),
 };
