@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../imgs/logo.png";
 import AnimationWrapper from "../common/page-animation";
 import defaultBanner from "../imgs/blog banner.png";
@@ -8,7 +8,13 @@ import uploadImage from "../common/cloudinary";
 import toast, { Toaster } from "react-hot-toast";
 import EditorJS from "@editorjs/editorjs";
 import { tools } from "./tools.component";
+import axios from "axios";
+import { UserContext } from "../App";
 const BlogEditor = () => {
+  const navigate = useNavigate();
+  let {
+    userAuth: { token },
+  } = useContext(UserContext);
   let {
     blog,
     blog: { title, banner, content, tags, des },
@@ -18,14 +24,16 @@ const BlogEditor = () => {
     setEditorState,
   } = useContext(EditorContext);
   useEffect(() => {
-    setTextEditor(
-      new EditorJS({
-        holder: "textEditor",
-        data: content,
-        tools: tools,
-        placeholder: "Let's write an awesome story",
-      })
-    );
+    if (!textEditor.isReady) {
+      setTextEditor(
+        new EditorJS({
+          holder: "textEditor",
+          data: content,
+          tools: tools,
+          placeholder: "Let's write an awesome story",
+        })
+      );
+    }
   }, []);
   const handleBannerUpload = async (e) => {
     const img = e.target.files[0];
@@ -77,6 +85,55 @@ const BlogEditor = () => {
         });
     }
   };
+
+  const handleSaveDaft = async (e) => {
+    if (e.target.className.includes("disable")) {
+      return;
+    }
+    if (!title.length) {
+      return toast.error("Write blog title before saving it as a draft");
+    }
+
+    let loadingToast = toast.loading("Saving Draft....");
+    e.target.classList.add("disable");
+    if (textEditor.isReady) {
+      const content = await textEditor.save();
+      if (content) {
+        const blogData = {
+          title,
+          banner,
+          des,
+          content,
+          tags,
+          draft: true,
+        };
+        try {
+          const response = await axios.post(
+            import.meta.env.VITE_SERVER_DOMAIN + "/blog/create-blog",
+            blogData,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+          if (response) {
+            e.target.classList.remove("disable");
+            toast.dismiss(loadingToast);
+            toast.success("Saved!");
+            setTimeout(() => {
+              navigate("/");
+            }, 500);
+          }
+        } catch ({ response }) {
+          console.log("response", response);
+          e.target.classList.remove("disable");
+          toast.dismiss(loadingToast);
+          return toast.error(response.data.message);
+        }
+      }
+    }
+  };
   return (
     <>
       <nav className="navbar">
@@ -90,7 +147,9 @@ const BlogEditor = () => {
           <button className="btn-dark py-2" onClick={handlePublishEvent}>
             Publish
           </button>
-          <button className="btn-light py-2">Save Draft</button>
+          <button className="btn-light py-2" onClick={handleSaveDaft}>
+            Save Draft
+          </button>
         </div>
       </nav>
       <Toaster />
