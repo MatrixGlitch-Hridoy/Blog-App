@@ -31,7 +31,7 @@ const blogSchema = mongoose.Schema(
     author: {
       type: Schema.Types.ObjectId,
       required: true,
-      ref: "users",
+      ref: "User",
     },
     activity: {
       total_likes: {
@@ -53,7 +53,7 @@ const blogSchema = mongoose.Schema(
     },
     comments: {
       type: [Schema.Types.ObjectId],
-      ref: "comments",
+      ref: "Comment",
     },
     draft: {
       type: Boolean,

@@ -4,3 +4,4 @@ import { blogController } from "../controllers/blog.controller.js";
 export const blogRouter = express.Router();
 
 blogRouter.post("/create-blog", isAuthenticateUser, blogController.createBlog);
+blogRouter.get("/latest-blogs", blogController.getLatestBlogs);
