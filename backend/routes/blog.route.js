@@ -4,4 +4,11 @@ import { blogController } from "../controllers/blog.controller.js";
 export const blogRouter = express.Router();
 
 blogRouter.post("/create-blog", isAuthenticateUser, blogController.createBlog);
-blogRouter.get("/latest-blogs", blogController.getLatestBlogs);
+blogRouter.post("/latest-blogs", blogController.getLatestBlogs);
+blogRouter.get("/trending-blogs", blogController.getTrendingBlogs);
+blogRouter.post("/search-blogs", blogController.searchBlogs);
+blogRouter.post(
+  "/all-latest-blogs-count",
+  blogController.getAllLatestBlogsCount
+);
+blogRouter.post("/search-blogs-count", blogController.getSeachBlogsCount);

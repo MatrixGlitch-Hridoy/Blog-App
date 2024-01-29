@@ -79,6 +79,7 @@ export const blogController = {
     }
   }),
   getLatestBlogs: catchAsyncError(async (req, res, next) => {
+    const { page } = req.body;
     const maxLimit = 5;
     try {
       const blogs = await blogModel
@@ -89,8 +90,68 @@ export const blogController = {
         )
         .sort({ publishedAt: -1 })
         .select("blog_id title des banner activity tags publishedAt -_id")
+        .skip((page - 1) * maxLimit)
         .limit(maxLimit);
       return res.status(200).json({ message: "success", blogs });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  getTrendingBlogs: catchAsyncError(async (req, res, next) => {
+    const maxLimit = 5;
+    try {
+      const blogs = await blogModel
+        .find({ draft: false })
+        .populate(
+          "author",
+          "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+        )
+        .sort({
+          "activity.total_read": -1,
+          "activity.total_likes": -1,
+          publishedAt: -1,
+        })
+        .select("blog_id title  publishedAt -_id")
+        .limit(maxLimit);
+      return res.status(200).json({ message: "success", blogs });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  searchBlogs: catchAsyncError(async (req, res, next) => {
+    const { tag, page } = req.body;
+    const findQuery = { tags: tag, draft: false };
+    const maxLimit = 5;
+    try {
+      const blogs = await blogModel
+        .find(findQuery)
+        .populate(
+          "author",
+          "personal_info.profile_img personal_info.username personal_info.fullname -_id"
+        )
+        .sort({ publishedAt: -1 })
+        .select("blog_id title des banner activity tags publishedAt -_id")
+        .skip((page - 1) * maxLimit)
+        .limit(maxLimit);
+      return res.status(200).json({ message: "success", blogs });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  getSeachBlogsCount: catchAsyncError(async (req, res, next) => {
+    try {
+      const { tag } = req.body;
+      const findQuery = { tags: tag, draft: false };
+      const count = await blogModel.countDocuments(findQuery);
+      return res.status(200).json({ message: "success", totalDocs: count });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  getAllLatestBlogsCount: catchAsyncError(async (req, res, next) => {
+    try {
+      const count = await blogModel.countDocuments({ draft: false });
+      return res.status(200).json({ message: "success", totalDocs: count });
     } catch (err) {
       return next(new ErrorHandler(err.message, 500));
     }
