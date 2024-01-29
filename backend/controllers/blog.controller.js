@@ -119,8 +119,15 @@ export const blogController = {
     }
   }),
   searchBlogs: catchAsyncError(async (req, res, next) => {
-    const { tag, page } = req.body;
-    const findQuery = { tags: tag, draft: false };
+    const { tag, query, author, page } = req.body;
+    let findQuery;
+    if (tag) {
+      findQuery = { tags: tag, draft: false };
+    } else if (query) {
+      findQuery = { title: new RegExp(query, "i"), draft: false };
+    } else if (author) {
+      findQuery = { author, draft: false };
+    }
     const maxLimit = 5;
     try {
       const blogs = await blogModel
@@ -139,9 +146,16 @@ export const blogController = {
     }
   }),
   getSeachBlogsCount: catchAsyncError(async (req, res, next) => {
+    const { tag, query, author } = req.body;
+    let findQuery;
+    if (tag) {
+      findQuery = { tags: tag, draft: false };
+    } else if (query) {
+      findQuery = { title: new RegExp(query, "i"), draft: false };
+    } else if (author) {
+      findQuery = { author, draft: false };
+    }
     try {
-      const { tag } = req.body;
-      const findQuery = { tags: tag, draft: false };
       const count = await blogModel.countDocuments(findQuery);
       return res.status(200).json({ message: "success", totalDocs: count });
     } catch (err) {
