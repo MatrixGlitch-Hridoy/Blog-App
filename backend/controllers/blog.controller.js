@@ -8,7 +8,7 @@ export const blogController = {
   createBlog: catchAsyncError(async (req, res, next) => {
     try {
       const authId = req.user;
-      let { title, des, banner, tags, content, draft } = req.body;
+      let { title, des, banner, tags, content, draft, id } = req.body;
       if (!title.length) {
         return res.status(403).json({
           error: "You must provide a title ",
@@ -39,40 +39,49 @@ export const blogController = {
 
       tags = tags.map((tag) => tag.toLowerCase());
       let blog_id =
+        id ||
         title
           .replace(/[^a-zA-Z0-9]/g, " ")
           .replace(/\s+/g, "-")
           .trim() + nanoid();
 
-      const blog = await blogModel.create({
-        title,
-        des,
-        banner,
-        content,
-        tags,
-        author: authId,
-        blog_id,
-        draft: Boolean(draft),
-      });
-      if (blog) {
-        let incrementVal = draft ? 0 : 1;
-        const user = await userModel.findOneAndUpdate(
-          { _id: authId },
-          {
-            $inc: { "account_info.total_posts": incrementVal },
-            $push: { blogs: blog._id },
-          }
+      if (id) {
+        const blog = await blogModel.findOneAndUpdate(
+          { blog_id },
+          { title, des, banner, content, tags, draft: draft ? draft : false }
         );
-        if (!user) {
-          return res
-            .status(500)
-            .json({ error: "Failed to update total posts number" });
-        }
-        res.status(201).json({
-          success: true,
-          message: "Blog Created",
-          blog,
+        res.status(200).json({ message: "Blog Updated", id: blog_id, blog });
+      } else {
+        const blog = await blogModel.create({
+          title,
+          des,
+          banner,
+          content,
+          tags,
+          author: authId,
+          blog_id,
+          draft: Boolean(draft),
         });
+        if (blog) {
+          let incrementVal = draft ? 0 : 1;
+          const user = await userModel.findOneAndUpdate(
+            { _id: authId },
+            {
+              $inc: { "account_info.total_posts": incrementVal },
+              $push: { blogs: blog._id },
+            }
+          );
+          if (!user) {
+            return res
+              .status(500)
+              .json({ error: "Failed to update total posts number" });
+          }
+          res.status(201).json({
+            success: true,
+            message: "Blog Created",
+            blog,
+          });
+        }
       }
     } catch (err) {
       return next(new ErrorHandler(err.message, 500));
@@ -119,16 +128,16 @@ export const blogController = {
     }
   }),
   searchBlogs: catchAsyncError(async (req, res, next) => {
-    const { tag, query, author, page } = req.body;
+    const { tag, query, author, page, limit, eliminate_blog } = req.body;
     let findQuery;
     if (tag) {
-      findQuery = { tags: tag, draft: false };
+      findQuery = { tags: tag, draft: false, blog_id: { $ne: eliminate_blog } };
     } else if (query) {
       findQuery = { title: new RegExp(query, "i"), draft: false };
     } else if (author) {
       findQuery = { author, draft: false };
     }
-    const maxLimit = 5;
+    const maxLimit = limit ? limit : 5;
     try {
       const blogs = await blogModel
         .find(findQuery)
@@ -166,6 +175,36 @@ export const blogController = {
     try {
       const count = await blogModel.countDocuments({ draft: false });
       return res.status(200).json({ message: "success", totalDocs: count });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  getBlogById: catchAsyncError(async (req, res, next) => {
+    const { blog_id, draft, mode } = req.body;
+    const incrementVal = mode !== "edit" ? 1 : 0;
+    try {
+      const blog = await blogModel
+        .findOneAndUpdate(
+          { blog_id },
+          { $inc: { "activity.total_reads": incrementVal } }
+        )
+        .populate(
+          "author",
+          "personal_info.fullname personal_info.username personal_info.profile_img"
+        )
+        .select("title des content banner activity publishedAt blog_id tags");
+      if (blog) {
+        await userModel.findOneAndUpdate(
+          { "personal_info.username": blog.author.personal_info.username },
+          { $inc: { "account_info.total_reads": incrementVal } }
+        );
+        if (blog.draft && !draft) {
+          return res
+            .status(500)
+            .json({ error: "You can not access draft blog" });
+        }
+        return res.status(200).json({ blog });
+      }
     } catch (err) {
       return next(new ErrorHandler(err.message, 500));
     }

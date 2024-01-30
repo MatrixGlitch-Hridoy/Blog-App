@@ -12,3 +12,4 @@ blogRouter.post(
   blogController.getAllLatestBlogsCount
 );
 blogRouter.post("/search-blogs-count", blogController.getSeachBlogsCount);
+blogRouter.post("/blog-details", blogController.getBlogById);
