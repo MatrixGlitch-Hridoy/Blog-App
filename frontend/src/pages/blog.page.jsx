@@ -7,6 +7,9 @@ import { getDay } from "../common/date";
 import BlogInteraction from "../components/blog-interaction.component";
 import BlogPostCard from "../components/blog-post.component";
 import BlogContent from "../components/blog-content.component";
+import CommentsContainer, {
+  fetchComments,
+} from "../components/comments.component";
 
 export const blogStructure = {
   title: "",
@@ -25,6 +28,9 @@ const BlogPage = () => {
   const [blog, setBlog] = useState(blogStructure);
   const [similarBlogs, setSimilarBlogs] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isLikedByUser, setIsLikedByUser] = useState(false);
+  const [commentsWrapper, setCommentsWrapper] = useState(false);
+  const [totalParentCommentsLoaded, setTotalParentCommentsLoaded] = useState(0);
   const {
     title,
     content,
@@ -42,7 +48,12 @@ const BlogPage = () => {
         { blog_id }
       );
       if (response) {
-        const tags = response?.data?.blog?.tags || [];
+        let newData = { ...response?.data?.blog };
+        newData.comments = await fetchComments({
+          blog_id: newData._id,
+          setParentCommentCountFunc: setTotalParentCommentsLoaded,
+        });
+        const tags = newData?.tags || [];
         const res = await axios.post(
           import.meta.env.VITE_SERVER_DOMAIN + "/blog/search-blogs",
           { tag: tags[0], limit: 6, eliminate_blog: blog_id }
@@ -50,7 +61,7 @@ const BlogPage = () => {
         if (res) {
           setSimilarBlogs(res?.data?.blogs);
         }
-        setBlog(response?.data?.blog);
+        setBlog(newData);
         setLoading(false);
       }
     } catch (err) {
@@ -66,13 +77,28 @@ const BlogPage = () => {
     setBlog(blogStructure);
     setSimilarBlogs(null);
     setLoading(true);
+    setIsLikedByUser(false);
+    setCommentsWrapper(false);
+    setTotalParentCommentsLoaded(0);
   };
   return (
     <AnimationWrapper>
       {loading ? (
         <Loader />
       ) : (
-        <BlogContext.Provider value={{ blog, setBlog }}>
+        <BlogContext.Provider
+          value={{
+            blog,
+            setBlog,
+            isLikedByUser,
+            setIsLikedByUser,
+            commentsWrapper,
+            setCommentsWrapper,
+            totalParentCommentsLoaded,
+            setTotalParentCommentsLoaded,
+          }}
+        >
+          <CommentsContainer />
           <div className="max-w-[900px] center py-10 max-lg:px-[5vw]">
             <img src={banner} className="aspect-video" />
             <div className="mt-12">
