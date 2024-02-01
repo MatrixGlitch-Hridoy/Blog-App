@@ -13,3 +13,9 @@ blogRouter.post(
 );
 blogRouter.post("/search-blogs-count", blogController.getSeachBlogsCount);
 blogRouter.post("/blog-details", blogController.getBlogById);
+blogRouter.post("/like-blog", isAuthenticateUser, blogController.likeBlog);
+blogRouter.post(
+  "/isliked-by-user",
+  isAuthenticateUser,
+  blogController.isBlogLikedByUser
+);

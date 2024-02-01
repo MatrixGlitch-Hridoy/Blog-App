@@ -3,6 +3,7 @@ import blogModel from "../models/blog.model.js";
 import catchAsyncError from "../middlewares/catch-async-errors.js";
 import ErrorHandler from "../utils/Error-handler.js";
 import userModel from "../models/user.model.js";
+import notificationModel from "../models/notification.model.js";
 
 export const blogController = {
   createBlog: catchAsyncError(async (req, res, next) => {
@@ -205,6 +206,52 @@ export const blogController = {
         }
         return res.status(200).json({ blog });
       }
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  likeBlog: catchAsyncError(async (req, res, next) => {
+    const authId = req.user;
+    const { _id, isLikedByUser } = req.body;
+    const incrementVal = !isLikedByUser ? 1 : -1;
+
+    try {
+      const blog = await blogModel.findOneAndUpdate(
+        { _id },
+        { $inc: { "activity.total_likes": incrementVal } }
+      );
+      if (blog) {
+        if (!isLikedByUser) {
+          await notificationModel.create({
+            type: "like",
+            blog: _id,
+            notification_for: blog.author,
+            user: authId,
+          });
+          return res.status(200).json({ liked_by_user: true });
+        } else {
+          await notificationModel.findOneAndDelete({
+            user: authId,
+            blog: _id,
+            type: "like",
+          });
+          return res.status(200).json({ liked_by_user: false });
+        }
+      }
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  isBlogLikedByUser: catchAsyncError(async (req, res, next) => {
+    const authId = req.user;
+    const { _id } = req.body;
+    try {
+      const result = await notificationModel.exists({
+        user: authId,
+        type: "like",
+        blog: _id,
+      });
+      return res.status(200).json({ result });
     } catch (err) {
       return next(new ErrorHandler(err.message, 500));
     }
