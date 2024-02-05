@@ -106,8 +106,8 @@ const BlogPage = () => {
               <div className="flex max-sm:flex-col justify-between my-8">
                 <div className="flex gap-5 items-start">
                   <img src={profile_img} className="w-12 h-12 rounded-full" />
-                  <p className="capitalize">
-                    {fullname}
+                  <p>
+                    <span className="capitalize">{fullname}</span>
                     <br />@
                     <Link to={`/user/${author_username}`} className="underline">
                       {author_username}

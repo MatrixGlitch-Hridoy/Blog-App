@@ -22,7 +22,7 @@ const UserAuthForm = ({ type }) => {
       storeInSession("user", JSON.stringify(response.data));
       setUserAuth(response.data);
     } catch ({ response }) {
-      toast.error(response.data.error);
+      toast.error(response.data.message);
     }
   };
   const handleSubmit = (e) => {
