@@ -41,7 +41,7 @@ export const authController = {
       if (!passwordRegex.test(password)) {
         return res.status(403).json({
           error:
-            "Password shoukd be 6 to 20 characters long with a numerix, 1 lowercase and 1 uppercase letters",
+            "Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letters",
         });
       }
 
@@ -87,11 +87,9 @@ export const authController = {
           return next(new ErrorHandler("Invalid email or password", 401));
         }
       } else {
-        return res
-          .status(403)
-          .json({
-            error: "Account was created using google. Try login with google",
-          });
+        return res.status(403).json({
+          error: "Account was created using google. Try login with google",
+        });
       }
 
       const token = sendAccessToken(user);
@@ -145,17 +143,55 @@ export const authController = {
               google_auth: true,
             });
           }
-          res.status(200).json({
-            success: true,
-            user,
-            token,
-          });
+          if (user._id) {
+            const t = sendAccessToken(user);
+            res.status(200).json({
+              success: true,
+              user,
+              token: t,
+            });
+          }
         });
     } catch (err) {
       return res.status(500).json({
         error:
           "Failed to authenticate you with google. Try with some other google account",
       });
+    }
+  }),
+
+  changePassword: catchAsyncError(async (req, res, next) => {
+    const { currentPassword, newPassword } = req.body;
+    if (
+      !passwordRegex.test(currentPassword) ||
+      !passwordRegex.test(newPassword)
+    ) {
+      return res.status(403).json({
+        error:
+          "Password should be 6 to 20 characters long with a numeric, 1 lowercase and 1 uppercase letters",
+      });
+    }
+    try {
+      const user = await userModel
+        .findOne({ _id: req.user })
+        .select("+personal_info.password");
+      if (!user.google_auth) {
+        // Checking if password matched or not
+        const isPasswordMatched = await user.comparePassword(currentPassword);
+        if (!isPasswordMatched) {
+          return next(new ErrorHandler("Invalid password", 401));
+        }
+      } else {
+        return res.status(403).json({
+          error:
+            "You can't change account's password you logged in through google",
+        });
+      }
+      user.personal_info.password = newPassword;
+      await user.save();
+      return res.status(200).json({ status: "Password changed" });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 400));
     }
   }),
 };
