@@ -19,3 +19,14 @@ blogRouter.post(
   isAuthenticateUser,
   blogController.isBlogLikedByUser
 );
+blogRouter.post(
+  "/user-written-blogs",
+  isAuthenticateUser,
+  blogController.manageBlogs
+);
+blogRouter.post(
+  "/user-written-blogs-count",
+  isAuthenticateUser,
+  blogController.manageBlogsCount
+);
+blogRouter.post("/delete-blog", isAuthenticateUser, blogController.deleteBlog);

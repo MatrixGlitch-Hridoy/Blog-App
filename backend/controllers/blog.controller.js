@@ -4,6 +4,7 @@ import catchAsyncError from "../middlewares/catch-async-errors.js";
 import ErrorHandler from "../utils/Error-handler.js";
 import userModel from "../models/user.model.js";
 import notificationModel from "../models/notification.model.js";
+import commentModel from "../models/comment.model.js";
 
 export const blogController = {
   createBlog: catchAsyncError(async (req, res, next) => {
@@ -253,6 +254,68 @@ export const blogController = {
       });
       return res.status(200).json({ result });
     } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  manageBlogs: catchAsyncError(async (req, res, next) => {
+    const authId = req.user;
+    const { page, draft, query, deleteDocCount } = req.body;
+    const maxLimit = 5;
+    let skipDocs = (page - 1) * maxLimit;
+    if (deleteDocCount) {
+      skipDocs -= deleteDocCount;
+    }
+    try {
+      const blogs = await blogModel
+        .find({
+          author: authId,
+          draft,
+          title: new RegExp(query, "i"),
+        })
+        .skip(skipDocs)
+        .limit(maxLimit)
+        .sort({ publishedAt: -1 })
+        .select("title banner publishedAt blog_id activity des draft -_id");
+      if (blogs) {
+        return res.status(200).json({ blogs });
+      }
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  manageBlogsCount: catchAsyncError(async (req, res, next) => {
+    const authId = req.user;
+    const { draft, query } = req.body;
+    try {
+      const count = await blogModel.countDocuments({
+        author: authId,
+        draft,
+        title: new RegExp(query, "i"),
+      });
+      return res.status(200).json({ totalDocs: count });
+    } catch (err) {
+      return next(new ErrorHandler(err.message, 500));
+    }
+  }),
+  deleteBlog: catchAsyncError(async (req, res, next) => {
+    const authId = req.user;
+    const { blog_id } = req.body;
+    try {
+      const blog = await blogModel.findOneAndDelete({ blog_id });
+      if (blog) {
+        await notificationModel.deleteMany({ blog: blog._id });
+        await commentModel.deleteMany({ blog_id: blog._id });
+        await userModel.findOneAndUpdate(
+          { _id: authId },
+          {
+            $pull: { blog: blog._id },
+            $inc: { "account_info.total_posts": blog.draft ? 0 : -1 },
+          }
+        );
+        return res.status(200).json({ status: "done" });
+      }
+    } catch (err) {
+      console.log(err);
       return next(new ErrorHandler(err.message, 500));
     }
   }),
