@@ -20,7 +20,7 @@ const deleteComments = (_id) => {
         .findOneAndDelete({ comment: _id })
         .then((notification) => console.log("comment notification deleted"));
       notificationModel
-        .findOneAndDelete({ reply: _id })
+        .findOneAndUpdate({ reply: _id }, { $unset: { reply: 1 } })
         .then((notification) => console.log("reply notification deleted"));
       blogModel
         .findOneAndUpdate(
@@ -46,7 +46,8 @@ const deleteComments = (_id) => {
 export const commentController = {
   createComment: catchAsyncError(async (req, res, next) => {
     const authId = req.user;
-    const { _id, comment, blog_author, replying_to } = req.body;
+    const { _id, comment, blog_author, replying_to, notification_id } =
+      req.body;
     let commentObj = {
       blog_id: _id,
       blog_author,
@@ -89,7 +90,16 @@ export const commentController = {
             { _id: replying_to },
             { $push: { children: commentFile._id } }
           );
-          notificationObj.notification_for = replyingToCommentDoc.commented_by;
+          if (replyingToCommentDoc) {
+            notificationObj.notification_for =
+              replyingToCommentDoc.commented_by;
+          }
+          if (notification_id) {
+            await notificationModel.findOneAndUpdate(
+              { _id: notification_id },
+              { reply: commentFile._id }
+            );
+          }
         }
         await notificationModel.create(notificationObj);
         res.status(200).json({
