@@ -1,17 +1,21 @@
 import { Link, Outlet, useNavigate } from "react-router-dom";
 import logo from "../imgs/logo.png";
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { UserContext } from "../App";
 import UserNavigationPanel from "./user-navigation.component";
+import axios from "axios";
 const Navbar = () => {
   const navigate = useNavigate();
   const [searchBoxVisibility, setSearchBoxVisibility] = useState(false);
   const [userNavPanel, setUserNavPanel] = useState(false);
   const {
+    userAuth,
     userAuth: {
       token,
       user: { personal_info: { profile_img = {} } = {} } = {},
+      new_notification_available,
     } = {},
+    setUserAuth,
   } = useContext(UserContext);
   const handleUserNavPanel = () => {
     setUserNavPanel((currentVal) => !currentVal);
@@ -27,6 +31,28 @@ const Navbar = () => {
       navigate(`/search/${query}`);
     }
   };
+  const getNewNotification = async () => {
+    try {
+      const response = await axios.get(
+        import.meta.env.VITE_SERVER_DOMAIN + "/notification/new-notification",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+      if (response.data) {
+        setUserAuth({ ...userAuth, ...response.data });
+      }
+    } catch (err) {
+      console.log(err);
+    }
+  };
+  useEffect(() => {
+    if (token) {
+      getNewNotification();
+    }
+  }, [token]);
   return (
     <>
       <nav className="navbar z-50">
@@ -60,9 +86,14 @@ const Navbar = () => {
           </Link>
           {token ? (
             <>
-              <Link to="dashboard/notification">
+              <Link to="dashboard/notifications">
                 <button className="w-12 h-12 rounded-full bg-grey relative hover:bg-black/10">
                   <i className="fi fi-rr-bell text-2xl block mt-1"></i>
+                  {new_notification_available ? (
+                    <span className="bg-red w-3 h-3 rounded-full absolute z-10 top-2 right-2"></span>
+                  ) : (
+                    ""
+                  )}
                 </button>
               </Link>
               <div
