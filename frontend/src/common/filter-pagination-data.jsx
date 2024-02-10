@@ -17,7 +17,7 @@ export const filterPaginationData = async ({
     };
   }
   if (state !== null && !create_new_arr) {
-    obj = { ...state, results: [...state.results, ...data], page: page };
+    obj = { ...state, results: [...state.results, ...data], page };
   } else {
     try {
       const response = await axios.post(
@@ -25,7 +25,13 @@ export const filterPaginationData = async ({
         data_to_send,
         headers
       );
-      obj = { results: data, page: 1, totalDocs: response?.data?.totalDocs };
+      if (response.data) {
+        obj = {
+          results: data,
+          page: 1,
+          totalDocs: response?.data?.totalDocs,
+        };
+      }
     } catch (err) {
       console.log(err);
     }

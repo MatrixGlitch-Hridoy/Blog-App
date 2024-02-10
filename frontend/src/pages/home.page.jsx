@@ -31,7 +31,7 @@ const Homepage = () => {
         import.meta.env.VITE_SERVER_DOMAIN + "/blog/latest-blogs",
         { page }
       );
-      if (response) {
+      if (response.data) {
         const formateData = await filterPaginationData({
           state: blogs,
           data: response?.data?.blogs,
@@ -111,7 +111,7 @@ const Homepage = () => {
                   return (
                     <AnimationWrapper
                       transition={{ duration: 1, delay: i * 0.1 }}
-                      key={blog.blog_id}
+                      key={i}
                     >
                       <BlogPostCard
                         content={blog}
@@ -137,7 +137,7 @@ const Homepage = () => {
                 return (
                   <AnimationWrapper
                     transition={{ duration: 1, delay: i * 0.1 }}
-                    key={blog.blog_id}
+                    key={i}
                   >
                     <MinimalBlogPost blog={blog} index={i} />
                   </AnimationWrapper>
@@ -184,7 +184,7 @@ const Homepage = () => {
                   return (
                     <AnimationWrapper
                       transition={{ duration: 1, delay: i * 0.1 }}
-                      key={blog.blog_id}
+                      key={i}
                     >
                       <MinimalBlogPost blog={blog} index={i} />
                     </AnimationWrapper>
