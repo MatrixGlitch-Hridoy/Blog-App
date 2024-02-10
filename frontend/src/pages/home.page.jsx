@@ -16,14 +16,17 @@ const Homepage = () => {
   const [trendingBlogs, setTrendingBlogs] = useState(null);
   const [pageState, setPageState] = useState("home");
   const categories = [
-    "programming",
-    "hollywood",
-    "film making",
-    "social media",
-    "cooking",
-    "tech",
-    "finance",
-    "travel",
+    "Technology",
+    "Food",
+    "Travel",
+    "Health and fitness",
+    "Lifestyle",
+    "Fashion and beauty",
+    "Business",
+    "Sports",
+    "Photography",
+    "Politics",
+    "Entertainment",
   ];
   const fetchLatestBlogs = async ({ page = 1 }) => {
     try {
