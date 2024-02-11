@@ -29,8 +29,8 @@ const BlogPostCard = ({ content, author }) => {
         <p className="my-3 text-xl font-gelasio leading-7 max-sm:hidden md:max-[1100px]:hidden line-clamp-2">
           {des}
         </p>
-        <div className="flex gap-4 mt-7">
-          {tags.map((tag, i) => (
+        <div className="flex gap-4 mt-7 flex-wrap">
+          {tags.slice(0, 2).map((tag, i) => (
             <span className="btn-light py-1 px-4" key={i}>
               {tag}
             </span>
