@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { filterPaginationData } from "../common/filter-pagination-data";
 import UserCard from "../components/usercard.component";
+import BlogCardSkeleton from "../components/blog-card-skeleton.component";
+import UserCardSkeleton from "../components/user-card-skeleton.component";
 
 const SearchPage = () => {
   const { query } = useParams();
@@ -62,7 +64,7 @@ const SearchPage = () => {
     return (
       <>
         {users === null ? (
-          <Loader />
+          [...Array(2)].map((_, index) => <UserCardSkeleton key={index} />)
         ) : users?.length ? (
           users.map((user, i) => {
             return (
@@ -89,7 +91,7 @@ const SearchPage = () => {
         >
           <>
             {blogs === null ? (
-              <Loader />
+              [...Array(5)].map((_, index) => <BlogCardSkeleton key={index} />)
             ) : blogs?.results?.length ? (
               blogs?.results?.map((blog, i) => {
                 return (

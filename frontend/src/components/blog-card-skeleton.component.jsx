@@ -8,7 +8,6 @@ const BlogCardSkeleton = () => {
         <div className="h-4 bg-grey rounded-full mb-4 animate-pulse"></div>
       </div>
       <div className="h-28 aspect-square bg-grey animate-pulse">
-        {/* <img src="" className="w-full h-full aspect-square object-cover" /> */}
         <svg
           className="w-full h-full text-grey-light dark:text-grey-dark "
           aria-hidden="true"
