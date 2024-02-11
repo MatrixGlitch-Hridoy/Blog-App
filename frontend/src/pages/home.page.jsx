@@ -10,6 +10,8 @@ import MinimalBlogPost from "../components/nobanner-blog-post.component";
 import NoDataMessage from "../components/nodata.component";
 import { filterPaginationData } from "../common/filter-pagination-data";
 import LoadMoreDataBtn from "../components/load-more.component";
+import BlogCardSkeleton from "../components/blog-card-skeleton.component";
+import TrendingSkeleton from "../components/trending-skeleton.component";
 
 const Homepage = () => {
   const [blogs, setBlogs] = useState(null);
@@ -108,7 +110,9 @@ const Homepage = () => {
           >
             <>
               {blogs === null ? (
-                <Loader />
+                [...Array(5)].map((_, index) => (
+                  <BlogCardSkeleton key={index} />
+                ))
               ) : blogs?.results?.length ? (
                 blogs?.results?.map((blog, i) => {
                   return (
@@ -134,7 +138,7 @@ const Homepage = () => {
               />
             </>
             {trendingBlogs === null ? (
-              <Loader />
+              [...Array(5)].map((_, index) => <TrendingSkeleton key={index} />)
             ) : trendingBlogs.length ? (
               trendingBlogs.map((blog, i) => {
                 return (
@@ -181,7 +185,9 @@ const Homepage = () => {
                 Trending <i className="fi fi-rr-arrow-trend-up"></i>
               </h1>
               {trendingBlogs === null ? (
-                <Loader />
+                [...Array(5)].map((_, index) => (
+                  <TrendingSkeleton key={index} />
+                ))
               ) : trendingBlogs.length ? (
                 trendingBlogs.map((blog, i) => {
                   return (
